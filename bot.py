@@ -73,7 +73,9 @@ class Bot:
 
     def start_scenario(self, scenario_name):
         scenario = config.SCENARIOS[scenario_name]
-        text_to_send = scenario['text'] + '\n' + '\n'.join(map(str, Handler(location=scenario_name).run_parse()))
+        text_to_send = scenario['text']
+        for time, news in Handler(location=scenario_name).run_parse():
+            text_to_send += f'\n{time} - {news}\n'
         return text_to_send
 
 
