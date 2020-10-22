@@ -1,33 +1,15 @@
 #!/usr/bin/venv python3~
 # -*- coding: utf-8 -*-
+import re
 
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
-import time
-import logging
-from random import randint
+from handlers import Handler
 
 try:
     import config
 except ImportError:
     exit('DO cp config.py.default config.py and set token')
-
-log = logging.getLogger('bot')
-
-
-def configure_logging():
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
-    stream_handler.setLevel(logging.INFO)
-    log.addHandler(stream_handler)
-
-    file_handler = logging.FileHandler('bot.log', encoding='utf-8')
-    file_handler.setFormatter(
-        logging.Formatter('%(asctime)s, %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
-    file_handler.setLevel(logging.DEBUG)
-    log.addHandler(file_handler)
-
-    log.setLevel(logging.DEBUG)
 
 
 class Bot:
@@ -45,6 +27,7 @@ class Bot:
         self.vk = vk_api.VkApi(token=token_)
         self.long_poller = VkBotLongPoll(self.vk, self.id_group)
         self.api = self.vk.get_api()
+        self.user_states = dict()
 
     def run(self):
         """
@@ -55,30 +38,45 @@ class Bot:
             :param event: VkBotMessageEvent obj
             :return: None
             """
-            try:
-                self.on_event(event)
-            except Exception:
-                log.exception('ошибка в обработке события')
+            self.on_event(event)
 
     def on_event(self, event):
         """
         обработка сообщений
         """
         if event.type == VkBotEventType.MESSAGE_NEW:
-            if event.object.message['text']:
-                log.debug('отправляю сообщение пользователю')
-                self.api.messages.send(
-                    message=event.object.message['text'],
-                    random_id=randint(0, 2 * 10),
-                    user_id=event.object.message['from_id'])
-        elif event.type == VkBotEventType.MESSAGE_TYPING_STATE:
-            log.debug('пользователь набирает сообщение')
-        else:
-            log.info('Пока не умеем обрабатывать события типа %s', event.type)
-            # raise ValueError('неизвестное сообщение')
+            user_id = event.object.message['from_id']
+            text = event.object.message['text'].lower()
+            print(text)
+
+            if user_id not in self.user_states:
+                # приветствую нового пользователя
+                self.user_states[user_id] = user_id
+                self.message_send(text_to_send=config.INTENTS[0]['answer'], user_id=user_id)
+            else:
+                # обработка сценария
+                for intent in config.INTENTS:
+                    if text in intent['tokens']:
+                        print('есть нужный ответ')
+                        print(intent['scenario'])
+                        text_to_send = self.start_scenario(scenario_name=intent['scenario'])
+                        self.message_send(text_to_send=text_to_send, user_id=user_id)
+                        break
+                else:
+                    self.message_send(text_to_send=config.DEFAULT_ANSWER, user_id=user_id)
+
+    def message_send(self, text_to_send, user_id):
+        self.api.messages.send(
+            message=text_to_send,
+            random_id=0,
+            user_id=user_id)
+
+    def start_scenario(self, scenario_name):
+        scenario = config.SCENARIOS[scenario_name]
+        text_to_send = scenario['text'] + '\n' + '\n'.join(map(str, Handler(location=scenario_name).run_parse()))
+        return text_to_send
 
 
 if __name__ == '__main__':
-    configure_logging()
     bot = Bot(id_group=config.GROUP_ID, token_=config.TOKEN)
     bot.run()
