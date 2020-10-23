@@ -1,6 +1,6 @@
 #!/usr/bin/venv python3~
 # -*- coding: utf-8 -*-
-
+import requests
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from Parsers import Parser
@@ -26,7 +26,7 @@ class Bot:
         self.vk = vk_api.VkApi(token=token_)
         self.long_poller = VkBotLongPoll(self.vk, self.id_group)
         self.api = self.vk.get_api()
-        self.user_states = dict()
+        self.users = dict()
 
     def run(self):
         """
@@ -48,16 +48,15 @@ class Bot:
             text = event.object.message['text'].lower()
             print(text)
 
-            if user_id not in self.user_states:
+            if user_id not in self.users:
                 # приветствую нового пользователя
-                self.user_states[user_id] = user_id
+                self.users[user_id] = user_id
                 self.message_send(text_to_send=config.INTENTS[0]['answer'], user_id=user_id)
             else:
                 # обработка сценария
                 for intent in config.INTENTS:
                     if text in intent['tokens']:
                         print('есть нужный ответ')  # TODO: добавить логирование
-                        print(intent['scenario'])   #  добавить обработку 400-500
                         text_to_send = self.start_scenario(scenario_name=intent['scenario'])
                         self.message_send(text_to_send=text_to_send, user_id=user_id)
                         break
@@ -72,10 +71,13 @@ class Bot:
 
     def start_scenario(self, scenario_name):
         scenario = config.SCENARIOS[scenario_name]
-        text_to_send = scenario['text']
-        for time, news in Parser(location=scenario_name).run_parse():
-            text_to_send += f'\n{time} - {news}\n'
-        return text_to_send
+        try:
+            text_to_send = scenario['text']
+            for news in Parser(location=scenario_name).run_parse():
+                text_to_send += f'\n- {news}\n'
+            return text_to_send
+        except requests.exceptions.MissingSchema:
+            return scenario['failure_parse']
 
 
 if __name__ == '__main__':
