@@ -1,10 +1,9 @@
 #!/usr/bin/venv python3~
 # -*- coding: utf-8 -*-
-import re
 
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
-from handlers import Handler
+from Parsers import Parser
 
 try:
     import config
@@ -57,8 +56,8 @@ class Bot:
                 # обработка сценария
                 for intent in config.INTENTS:
                     if text in intent['tokens']:
-                        print('есть нужный ответ')
-                        print(intent['scenario'])
+                        print('есть нужный ответ')  # TODO: добавить логирование
+                        print(intent['scenario'])   #  добавить обработку 400-500
                         text_to_send = self.start_scenario(scenario_name=intent['scenario'])
                         self.message_send(text_to_send=text_to_send, user_id=user_id)
                         break
@@ -74,7 +73,7 @@ class Bot:
     def start_scenario(self, scenario_name):
         scenario = config.SCENARIOS[scenario_name]
         text_to_send = scenario['text']
-        for time, news in Handler(location=scenario_name).run_parse():
+        for time, news in Parser(location=scenario_name).run_parse():
             text_to_send += f'\n{time} - {news}\n'
         return text_to_send
 
