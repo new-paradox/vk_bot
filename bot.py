@@ -4,11 +4,12 @@ import requests
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from Parsers import Parser
+from connect_db import Connect
 
-try:
-    import config
-except ImportError:
-    exit('DO cp config.py.default config.py and set token')
+# try:
+#     import config
+# except ImportError:
+#     exit('DO cp config.py.default config.py and set token')
 
 
 class Bot:
@@ -56,6 +57,7 @@ class Bot:
         Если пользователя нет в users, бот здоровается с пользователем;
         И добавляет его в users;
         Если пользователь уже есть в users -> начинается отработка сценария;
+        Распаковка полученного запроса из db;
         Если сообщение от пользователя подходит по ключам к сцению -> запускается
         соотвествующий сценарий;
         Иначе пользователь получает DEFAULT_ANSWER.
@@ -63,20 +65,24 @@ class Bot:
         if event.type == VkBotEventType.MESSAGE_NEW:
             user_id = event.object.message['from_id']
             text = event.object.message['text'].lower()
+
+            # запрос из бд
+            scenarios, intents, default_answer = Connect().connect_to_db()
             print(text)  # TODO: добавить логирование
             # приветствие
             if user_id not in self.users:
                 self.users[user_id] = user_id
-                self.message_send(text_to_send=config.INTENTS[0]['answer'], user_id=user_id)
+                self.message_send(text_to_send=intents[0]['answer'], user_id=user_id)
             else:  # сценарий
-                for intent in config.INTENTS:
-                    if text in intent['tokens']:
+                for intent in intents:
+
+                    if text in intent['tokens'].lower():
                         print('есть нужный ответ')  # TODO: добавить логирование
-                        text_to_send = self.get_scenario(scenario_name=intent['scenario'])
+                        text_to_send = self.get_scenario(scenario_name=intent['scenario'], scenarios=scenarios)
                         self.message_send(text_to_send=text_to_send, user_id=user_id)
                         break
                 else:
-                    self.message_send(text_to_send=config.DEFAULT_ANSWER, user_id=user_id)
+                    self.message_send(text_to_send=default_answer['text'], user_id=user_id)
 
     def message_send(self, text_to_send, user_id):
         """
@@ -89,14 +95,17 @@ class Bot:
             random_id=0,
             user_id=user_id)
 
-    def get_scenario(self, scenario_name):
+    def get_scenario(self, scenario_name, scenarios):
         """
+        :param scenarios:
         :param scenario_name: <str> "ru" or "world"
         :return: <str> ответ пользователю
         Обработка сценария;
         Парсинг сайтов - Parser;
         """
-        scenario = config.SCENARIOS[scenario_name]
+        for scenario in scenarios:
+            if scenario_name == scenario['name']:
+                break
         try:
             text_to_send = scenario['text']
             for news in Parser(location=scenario_name).run_parse():
@@ -106,6 +115,6 @@ class Bot:
             return scenario['failure_parse']
 
 
-if __name__ == '__main__':
-    bot = Bot(id_group=config.GROUP_ID, token_=config.TOKEN)
-    bot.run()
+# if __name__ == '__main__':
+#     bot = Bot(id_group=config.GROUP_ID, token_=config.TOKEN)
+#     bot.run()

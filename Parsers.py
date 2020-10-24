@@ -48,4 +48,4 @@ class Parser:
         news = list(set(news))
         if len(news) > 30:
             news = news[:(30 - len(news))]
-        return [news_.text for index, news_ in enumerate(news) if 18 < len(news_.text) < 130]
+        return [news_.text for index, news_ in enumerate(news) if 20 < len(news_.text) < 130]
