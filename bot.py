@@ -63,7 +63,7 @@ class Bot:
         if event.type == VkBotEventType.MESSAGE_NEW:
             user_id = event.object.message['from_id']
             text = event.object.message['text'].lower()
-            print(text)
+            print(text)  # TODO: добавить логирование
             # приветствие
             if user_id not in self.users:
                 self.users[user_id] = user_id
