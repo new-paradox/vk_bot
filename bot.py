@@ -60,7 +60,7 @@ class Bot:
         Распаковка полученного запроса из db;
         Если сообщение от пользователя подходит по ключам к сцению -> запускается
         соотвествующий сценарий;
-        Иначе пользователь получает DEFAULT_ANSWER.
+        Иначе пользователь получает default_answer.
         """
         if event.type == VkBotEventType.MESSAGE_NEW:
             user_id = event.object.message['from_id']
