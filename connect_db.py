@@ -4,9 +4,9 @@ from pymysql.cursors import DictCursor
 
 
 class Connect:
-    def __init__(self):
-        self.users = list()
-
+    """
+    Подключение к базе данных
+    """
     def connect_to_db(self):
         with closing(pymysql.connect(
                 host='localhost',
@@ -23,6 +23,9 @@ class Connect:
 
 
 def select_scenarios(connection):
+    """
+    Запрос сценария
+    """
     scenarios = list()
     with connection.cursor() as cursor:
         query = """
@@ -35,6 +38,9 @@ def select_scenarios(connection):
 
 
 def select_intents(connection):
+    """
+    Запрос ключевых слов
+    """
     intents = list()
     with connection.cursor() as cursor:
         query = """
@@ -47,6 +53,9 @@ def select_intents(connection):
 
 
 def select_default_answer(connection):
+    """
+    Запрос ответа по умолчанию
+    """
     default_answer = None
     with connection.cursor() as cursor:
         query = """

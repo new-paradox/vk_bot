@@ -6,11 +6,6 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from Parsers import Parser
 from connect_db import Connect
 
-# try:
-#     import config
-# except ImportError:
-#     exit('DO cp config.py.default config.py and set token')
-
 
 class Bot:
     """
@@ -113,8 +108,3 @@ class Bot:
             return text_to_send
         except requests.exceptions.MissingSchema:
             return scenario['failure_parse']
-
-
-# if __name__ == '__main__':
-#     bot = Bot(id_group=config.GROUP_ID, token_=config.TOKEN)
-#     bot.run()
